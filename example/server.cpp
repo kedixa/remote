@@ -6,7 +6,7 @@
 #include <mutex>
 
 #include "remote/function_manager.h"
-#include "remote/remote_server.h"
+#include "remote/server.h"
 #include "coke/coke.h"
 
 std::atomic<bool> run_flag{true};
@@ -27,22 +27,22 @@ coke::Task<> process(remote::RemoteServerContext ctx) {
     remote::RemoteResponse &resp = ctx.get_resp();
     std::string *input = req.get_value();
 
-    std::map<int, std::string> data;
-    std::map<int, std::string> return_data;
-    std::vector<remote::RemoteFunction> funcs;
-    std::vector<int> return_args;
+    std::map<remote::ArgID, std::string> data;
+    std::map<remote::ArgID, std::string> return_data;
+    std::vector<remote::Command> cmds;
+    std::vector<remote::ArgID> return_ids;
 
     std::size_t off = 0;
     auto hdl = msgpack::unpack(input->data(), input->size(), off);
     hdl.get().convert(data);
     hdl = msgpack::unpack(input->data(), input->size(), off);
-    hdl.get().convert(funcs);
+    hdl.get().convert(cmds);
     hdl = msgpack::unpack(input->data(), input->size(), off);
-    hdl.get().convert(return_args);
+    hdl.get().convert(return_ids);
 
-    fm.invoke(data, funcs);
+    fm.invoke(data, cmds);
 
-    for (auto ret_id : return_args)
+    for (auto ret_id : return_ids)
         return_data[ret_id] = data[ret_id];
 
     std::string str;
@@ -107,7 +107,7 @@ int main() {
 
     register_functions();
 
-    remote::RemoteServer server(process);
+    remote::Server server(process);
 
     if (server.start(5300) == 0) {
         std::cout << "Server started" << std::endl;

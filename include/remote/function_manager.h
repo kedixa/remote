@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include "remote/remote_common.h"
+#include "remote/common.h"
 
 namespace remote {
 
@@ -23,8 +23,8 @@ constexpr bool is_non_const_lvalue_ref_v = std::is_lvalue_reference_v<T> &&
 
 class FunctionManager {
 public:
-    using DataMap = std::map<int, std::string>;
-    using ArgList = std::vector<int>;
+    using DataMap = std::map<ArgID, std::string>;
+    using ArgList = std::vector<ArgID>;
     using Function = std::function<std::string(DataMap &data, const ArgList &args)>;
 
 private:
@@ -117,14 +117,14 @@ public:
         return func_map.erase(name) == 1;
     }
 
-    void invoke(DataMap &data, const std::vector<RemoteFunction> &funcs) {
-        for (const auto &func : funcs) {
-            auto it = func_map.find(func.name);
+    void invoke(DataMap &data, const std::vector<Command> &cmds) {
+        for (const auto &cmd : cmds) {
+            auto it = func_map.find(cmd.name);
             if (it == func_map.end())
                 throw std::runtime_error("function not found");
 
-            std::string s = (it->second)(data, func.arg_ids);
-            data[func.return_id] = std::move(s);
+            std::string s = (it->second)(data, cmd.arg_ids);
+            data[cmd.ret_id] = std::move(s);
         }
     }
 
@@ -134,4 +134,4 @@ private:
 
 } // namespace remote
 
-#endif // REMOTE_CALL_FUNCTION_MANAGER_H
+#endif // REMOTE_FUNCTION_MANAGER_H

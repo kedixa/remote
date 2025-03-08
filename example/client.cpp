@@ -1,10 +1,12 @@
 #include <iostream>
 
-#include "remote/remote_client.h"
+#include "remote/client.h"
 #include "coke/coke.h"
 
-coke::Task<void> set_value(remote::RemoteClient &cli) {
-    remote::RemoteManager m;
+using Arg = remote::Arg;
+
+coke::Task<void> set_value(remote::Client &cli) {
+    remote::CommandBuilder m;
 
     m.remote("kv/set", "a", "2000");
     m.remote("kv/set", "b", "25");
@@ -21,16 +23,16 @@ coke::Task<void> set_value(remote::RemoteClient &cli) {
     co_return;
 }
 
-coke::Task<void> add_value(remote::RemoteClient &cli) {
-    remote::RemoteManager m;
+coke::Task<void> add_value(remote::Client &cli) {
+    remote::CommandBuilder m;
 
-    auto arg_sum = m.remote("kedixa/add",
+    Arg arg_sum = m.remote("kedixa/add",
         m.remote("kedixa/to_int", m.remote("kv/get", "a")),
         m.remote("kedixa/to_int", m.remote("kv/get", "b"))
     );
 
     m.remote("kv/set", "sum", m.remote("kedixa/to_string", arg_sum));
-    m.set_return_args({arg_sum});
+    m.set_return_args(arg_sum);
 
     auto [state, error] = co_await cli.call(m);
 
@@ -45,12 +47,12 @@ coke::Task<void> add_value(remote::RemoteClient &cli) {
     co_return;
 }
 
-coke::Task<void> append(remote::RemoteClient &cli) {
-    remote::RemoteManager m;
+coke::Task<void> append(remote::Client &cli) {
+    remote::CommandBuilder m;
 
-    auto arg_ref = m.arg("the sum is ");
+    Arg arg_ref = m.arg("the sum is ");
     m.remote("kedixa/append", arg_ref, m.remote("kv/get", "sum"));
-    m.set_return_args({arg_ref});
+    m.set_return_args(arg_ref);
 
     auto [state, error] = co_await cli.call(m);
 
@@ -63,11 +65,11 @@ coke::Task<void> append(remote::RemoteClient &cli) {
     }
 }
 
-coke::Task<void> no_param(remote::RemoteClient &cli) {
-    remote::RemoteManager m;
+coke::Task<void> no_param(remote::Client &cli) {
+    remote::CommandBuilder m;
 
-    auto arg_id = m.remote("kedixa/next_id");
-    m.set_return_args({arg_id});
+    Arg arg_id = m.remote("kedixa/next_id");
+    m.set_return_args(arg_id);
 
     auto [state, error] = co_await cli.call(m);
 
@@ -80,7 +82,7 @@ coke::Task<void> no_param(remote::RemoteClient &cli) {
     }
 }
 
-coke::Task<void> call_remote(remote::RemoteClient &cli) {
+coke::Task<void> call_remote(remote::Client &cli) {
     co_await set_value(cli);
     co_await add_value(cli);
     co_await append(cli);
@@ -90,11 +92,11 @@ coke::Task<void> call_remote(remote::RemoteClient &cli) {
 }
 
 int main() {
-    remote::RemoteClientParams params {
+    remote::ClientParams params {
         .host = "127.0.0.1",
     };
 
-    remote::RemoteClient cli(params);
+    remote::Client cli(params);
 
     coke::sync_wait(call_remote(cli));
 

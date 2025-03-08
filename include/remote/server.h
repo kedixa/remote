@@ -1,8 +1,8 @@
-#ifndef REMOTE_REMOTE_SERVER_H
-#define REMOTE_REMOTE_SERVER_H
+#ifndef REMOTE_SERVER_H
+#define REMOTE_SERVER_H
 
 #include "coke/net/basic_server.h"
-#include "remote/remote_task.h"
+#include "remote/task.h"
 
 namespace remote {
 
@@ -24,19 +24,19 @@ struct RemoteServerParams : public coke::ServerParams {
     ~RemoteServerParams() = default;
 };
 
-class RemoteServer : public coke::BasicServer<RemoteRequest, RemoteResponse> {
+class Server : public coke::BasicServer<RemoteRequest, RemoteResponse> {
     using Base = coke::BasicServer<RemoteRequest, RemoteResponse>;
 
 public:
-    RemoteServer(const RemoteServerParams &params, ProcessorType co_proc)
+    Server(const RemoteServerParams &params, ProcessorType co_proc)
         : Base(params, std::move(co_proc))
     { }
 
-    RemoteServer(ProcessorType co_proc)
+    Server(ProcessorType co_proc)
         : Base(RemoteServerParams(), std::move(co_proc))
     { }
 };
 
 } // namespace remote
 
-#endif //REMOTE_REMOTE_SERVER_H
+#endif //REMOTE_SERVER_H

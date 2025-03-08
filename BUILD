@@ -6,12 +6,12 @@ cc_library(
         "src/remote_client.cpp",
     ],
     hdrs = [
-        "include/remote/remote_common.h",
-        "include/remote/remote_manager.h",
+        "include/remote/common.h",
+        "include/remote/command_builder.h",
         "include/remote/function_manager.h",
-        "include/remote/remote_task.h",
-        "include/remote/remote_client.h",
-        "include/remote/remote_server.h",
+        "include/remote/task.h",
+        "include/remote/client.h",
+        "include/remote/server.h",
     ],
     includes = ["include"],
     deps = [
@@ -34,5 +34,14 @@ cc_binary(
     deps = [
         "//:remote",
         "@coke//:tools",
+    ]
+)
+
+# virtual target to build all binary
+cc_library(
+    name = "all_binary",
+    deps = [
+        ":client",
+        ":server",
     ]
 )

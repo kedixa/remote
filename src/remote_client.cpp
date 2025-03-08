@@ -1,5 +1,5 @@
-#include "remote/remote_client.h"
-#include "remote/remote_task.h"
+#include "remote/client.h"
+#include "remote/task.h"
 
 #include "coke/basic_awaiter.h"
 
@@ -18,7 +18,7 @@ public:
 };
 
 coke::Task<std::pair<int,int>>
-RemoteClient::call(RemoteManager &m) {
+Client::call(CommandBuilder &m) {
     RemoteTask *task;
     task = create_remote_task(params.host, params.port, params.retry_max);
     task->set_send_timeout(params.send_timeout);
@@ -29,8 +29,8 @@ RemoteClient::call(RemoteManager &m) {
     PackStream stream(msg);
 
     msgpack::pack(stream, m.data);
-    msgpack::pack(stream, m.funcs);
-    msgpack::pack(stream, m.return_args);
+    msgpack::pack(stream, m.cmds);
+    msgpack::pack(stream, m.return_ids);
 
     auto *req = task->get_req();
     req->set_type(0);
