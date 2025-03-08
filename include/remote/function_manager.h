@@ -96,6 +96,11 @@ private:
         return result_str;
     }
 
+    bool test(const std::string &value) {
+        auto handle = msgpack::unpack(value.data(), value.size());
+        return handle.get().as<bool>();
+    }
+
 public:
     FunctionManager() = default;
 
@@ -118,13 +123,56 @@ public:
     }
 
     void invoke(DataMap &data, const std::vector<Command> &cmds) {
-        for (const auto &cmd : cmds) {
-            auto it = func_map.find(cmd.name);
-            if (it == func_map.end())
-                throw std::runtime_error("function not found");
+        std::size_t x = 0;
+        std::size_t instructions = 0;
+        std::size_t max_instructions = 100;
 
-            std::string s = (it->second)(data, cmd.arg_ids);
-            data[cmd.ret_id] = std::move(s);
+        while (instructions < max_instructions) {
+            ++instructions;
+
+            if (x >= cmds.size())
+                break;
+
+            const Command &cmd = cmds[x];
+
+            switch (cmd.type) {
+            case CMD_INVOKE:
+            {
+                auto it = func_map.find(cmd.name);
+                if (it == func_map.end())
+                    throw std::runtime_error("function not found");
+
+                std::string s = (it->second)(data, cmd.arg_ids);
+                data[cmd.ret_id] = std::move(s);
+                ++x;
+                break;
+            }
+
+            case CMD_RETURN:
+                break;
+
+            case CMD_JUMP:
+                x = cmd.label;
+                break;
+
+            case CMD_JUMP_TRUE:
+                if (test(data[cmd.arg_ids[0]]))
+                    x = cmd.label;
+                else
+                    ++x;
+                break;
+
+            case CMD_JUMP_FALSE:
+                if (test(data[cmd.arg_ids[0]]))
+                    ++x;
+                else
+                    x = cmd.label;
+                break;
+
+            default:
+                //break;
+                throw std::runtime_error("unknown command type");
+            }
         }
     }
 

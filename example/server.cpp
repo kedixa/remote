@@ -99,6 +99,11 @@ void register_functions() {
         std::cout << "kedixa/next_id: " << x << std::endl;
         return x;
     });
+
+    fm.add("kedixa/integer_less", +[](long long a, long long b) {
+        std::cout << "kedixa/integer_less: " << a << ' ' << b << std::endl;
+        return a < b;
+    });
 }
 
 int main() {

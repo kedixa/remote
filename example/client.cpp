@@ -82,13 +82,47 @@ coke::Task<void> no_param(remote::Client &cli) {
     }
 }
 
+coke::Task<void> loop(remote::Client &cli) {
+    remote::CommandBuilder m;
+
+    Arg arg_a = m.arg(0);
+    Arg arg_b = m.arg(0);
+    Arg arg_c = m.arg(11);
+
+    Arg flag = m.remote("kedixa/integer_less", arg_a, arg_c);
+    m.remote_while(flag, [&] {
+        arg_a = m.remote("kedixa/add", arg_a, 2);
+        flag = m.remote("kedixa/integer_less", arg_a, arg_c);
+    });
+
+    m.remote_while([&] {
+        return m.remote("kedixa/integer_less", arg_b, arg_c);
+    }, [&] {
+        arg_b = m.remote("kedixa/add", arg_b, 5);
+    });
+
+    m.set_return_args(arg_a, arg_b);
+
+    auto [state, error] = co_await cli.call(m);
+    if (state != coke::STATE_SUCCESS) {
+        std::cerr << "Error: " << state << ' ' << error << std::endl;
+    }
+    else {
+        int a = m.get_return_value<int>(arg_a);
+        int b = m.get_return_value<int>(arg_b);
+        std::cout << "loop success, a = " << a << ", b = " << b << std::endl;
+    }
+}
+
 coke::Task<void> call_remote(remote::Client &cli) {
     co_await set_value(cli);
     co_await add_value(cli);
     co_await append(cli);
 
-    for (int i = 0; i < 3; i++)
-        co_await no_param(cli);
+    co_await no_param(cli);
+    co_await no_param(cli);
+
+    co_await loop(cli);
 }
 
 int main() {

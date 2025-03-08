@@ -111,6 +111,57 @@ public:
         return ArgWrapper(this, cmds.size() - 1);
     }
 
+    template<typename WhileBody>
+    void remote_while(const Arg &arg, WhileBody &&body) {
+        std::size_t label_start = cmds.size();
+
+        Command cmd1;
+        cmd1.type = CMD_JUMP_FALSE;
+        cmd1.arg_ids.push_back(arg.get_id());
+        cmds.push_back(std::move(cmd1));
+
+        body();
+
+        Command cmd2;
+        cmd2.type = CMD_JUMP;
+        cmd2.label = label_start;
+
+        cmds.push_back(std::move(cmd2));
+        cmds[label_start].label = cmds.size();
+    }
+
+    template<typename WhileBody>
+    void remote_while(const ArgWrapper &arg, WhileBody &&body) = delete;
+
+    template<typename Condition, typename WhileBody>
+        requires std::is_invocable_r_v<Arg, Condition>
+    void remote_while(Condition &&cond, WhileBody &&body) {
+        std::size_t cond_start = cmds.size();
+
+        Arg arg = cond();
+
+        std::size_t label_start = cmds.size();
+        Command cmd1;
+        cmd1.type = CMD_JUMP_FALSE;
+        cmd1.arg_ids.push_back(arg.get_id());
+        cmds.push_back(std::move(cmd1));
+
+        body();
+
+        Command cmd2;
+        cmd2.type = CMD_JUMP;
+        cmd2.label = cond_start;
+
+        cmds.push_back(std::move(cmd2));
+        cmds[label_start].label = cmds.size();
+    }
+
+    void remote_return() {
+        Command cmd;
+        cmd.type = CMD_RETURN;
+        cmds.push_back(std::move(cmd));
+    }
+
     void set_return_ids(const std::vector<ArgID> &rets) {
         return_ids = rets;
     }
